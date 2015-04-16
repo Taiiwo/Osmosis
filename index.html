@@ -2,15 +2,15 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8" />
-    <title>Osmosis - Taiiwo</title>
+	<title>Osmosis - Taiiwo</title>
 	<div id="scaling"></div>
 	<script type="text/javascript" src="js/phaser.min.js"></script>
-    <style type="text/css">
-			@font-face{font-family:"Pixels";src:url('font.ttf');}
-      body {
-          margin: 0;
-      }
-    </style>
+	<style type="text/css">
+		@font-face{font-family:"Pixels";src:url('font.ttf');}
+		body {
+			margin: 0;
+		}
+	</style>
 </head>
 <body style="height: 100%;">
 
@@ -32,12 +32,12 @@ var d = new Date();
 var startTime = 0;
 var numberOfBalls = 2;
 var ballSpeed = 200;
-var red 		= {ball: '#d23d3d', background: '#e84f4f'};
-var green 	= {ball: '#a0cf5d', background: '#b8d68c'};
+var red			= {ball: '#d23d3d', background: '#e84f4f'};
+var green		= {ball: '#a0cf5d', background: '#b8d68c'};
 var yellow	= {ball: '#f39d21', background: '#e1aa5d'};
 var blue		= {ball: '#4e9fb1', background: '#7dc1cf'};
-var purple 	= {ball: '#8542ff', background: '#9b64fb'};
-var coast	 	= {ball: '#42717b', background: '#6d878d'};
+var purple	= {ball: '#8542ff', background: '#9b64fb'};
+var coast		= {ball: '#42717b', background: '#6d878d'};
 var worldColours = [];
 var colours = [red, yellow, coast, blue, purple, green];
 var scores;
@@ -47,117 +47,145 @@ function create() {
 
 	//  We're going to be using physics, so enable the Arcade Physics system
 	game.physics.startSystem(Phaser.Physics.ARCADE);
-
+	// randomise the first colour set
 	var colour1 = colours[randInt(0, colours.length - 1)];
 	while (1){
+		// make sure the second colour set is not the same as the first
 		var colour2 = colours[randInt(0,colours.length - 1)];
 		if (colour2 != colour1){
 			break;
 		}
 	}
+	// assign these as the colours to use when initialising
 	worldColours = [colour1, colour2];
 
-	//make backgrounds
+	// make coloured backgrounds
 	backgrounds = game.add.group();
 	makeBackgrounds();
-
-	//make barrier group
+	// make the barriers
+	// make barrier group to put the barriers in
 	barriers = game.add.group();
 
-	//variables that are true for both barriers
+	// variables that are true for both barriers
 	var barrierWidth = 10;
 	var barrierHeight = game.world.height * 0.9;
 	var barrierGap = game.world.height * 0.1;
-	//variables that are different from barrier to barrier
-	//these basically set their positions relative the the center of the barrier gap
+	// variables that are different from barrier to barrier. These basically set
+	// their positions relative the the center of the barrier gap
 	var barrierPositionYOffsets = [-barrierHeight - barrierGap, barrierGap];
 
-	//set up each barrier so that they have the correct properties each
+	// set up each barrier so that they have the correct properties each
 	for (var i = 0; i < barrierPositionYOffsets.length; i++){
-		//this is the only property that changes
+		// this is the only property that changes
 		var barrierPositionYOffset = barrierPositionYOffsets[i];
-		//create the barrier object
+		// create the barrier as a canvas object
 		var barrier = game.add.bitmapData(barrierWidth, barrierHeight);
-		//draw a rectangle
+		// draw a rectangle
 		barrier.ctx.beginPath();
 		barrier.ctx.rect(0, 0, barrierWidth, barrierHeight);
 		barrier.ctx.fillStyle = 'white';
 		barrier.ctx.fill();
-		//register our barrier as a sprite and place it in the world
+		// register our barrier canvas as a sprite and place it in the world using
+		// the position offsets so that they appear in the right place
 		var barrierSprite = game.add.sprite(game.world.centerX - barrierWidth / 2,
 			game.world.centerY + barrierPositionYOffset,
 			barrier
 		);
-		//assign the positions offset as a property so we know which one to use without
-		//having to identify it
+		// assign the position offset as a property so we know which one to use
+		// without having to identify the barrier
 		barrierSprite.positionYOffset = barrierPositionYOffset;
+		// place the barrier in the barriers group for group manipulation
 		barriers.add(barrierSprite);
 	}
+	// enable physics on the barriers
 	game.physics.enable(barriers);
+	// make the barriers immovable. This stops the balls from pushing the barriers
+	// out of the way.
 	barriers.setAllChildren('body.immovable', true);
+	// this gives the barriers a '.input' attribute
 	barriers.setAllChildren('inputEnabled', true);
 
+	// style for the start text
 	var style = {
-		font: "35px Pixels",
-		fill: "#fff",
+		font: "35px Pixels",   // Pixels is a font
+		fill: "#fff",   // text colour
 		align: "center"
 	};
-  startButton = game.add.text(0, 0, "Click to Start", style);
+	// make a text sprite
+	startButton = game.add.text(0, 0, "Click to Start", style);
+	// edit the location of the sprite (Put it in the center of the page)
 	startButton.x = game.world.centerX - startButton.width / 2;
 	startButton.y = game.world.centerY - startButton.height / 2;
+	// event handler for when the mouse is clicked. Will only fire once
 	game.input.onDown.addOnce(function (){
-		//start game
 		if (inPlay == false) {
-			startTime = d.getTime()
+			startTime = d.getTime()   // start the game timer
 			started = true;
-			startButton.kill();
+			startButton.kill();   // get rid of the start text
 			inPlay = true;
-			//make balls
+			// make global group for the balls
 			balls = game.add.group();
+			// load the balls into the game
 			makeBalls(numberOfBalls / 2, worldColours[0], balls);
 			makeBalls(numberOfBalls / 2, worldColours[1], balls);
 		}
 	}, this);
 	scores = game.add.group();
+	// load the scores to the page
+	makeScores();
+	// update the scores every second
 	setInterval(makeScores, 1000);
 }
-function makeScores(){
+function makeScores(){   // This function loads the score text
 	if (inPlay == true){
+		// delete all the previous scores
 		scores.removeAll()
 		d = new Date();
+		// calcuate the level's duration
 		var time = d.getTime() - startTime;
+		// convert time to seconds
 		time = Math.round(time / 1000);
+		// text string of scores
 		var text = "Time: "+ time +"s  Balls: "+ numberOfBalls +"  Speed: " + Math.floor(ballSpeed);
+		// style of scores
 		var style = {
 			font: "25px Pixels",
 			fill: "#fff",
 			align: "left"
 		};
-  	var text = game.add.text(10, 10, text, style);
+		// load scores as sprite
+		var text = game.add.text(10, 10, text, style);
+		// add scores to the scores group
 		scores.add(text);
 	}
 }
-function update(){
+function update(){   // this function is run every game tick
 	if (started){
+		// make it so the balls bounce off the barriers
 		game.physics.arcade.collide(balls, barriers);
 		for (var i = 0; i < barriers.children.length; i++){
 			var barrier = barriers.children[i];
+			// move the barrier to the correct position relative to the mouse
 			game.physics.arcade.moveToXY(
 				barrier,
 				game.world.centerX - barrier.width / 2,
 				game.input.activePointer.y + barrier.positionYOffset,
 				undefined,
-				100
+				100   // it will get there in 100ms. To make the barriers more
+							// responsive, lower this number
 			);
+			// check if the barriers have reached their destination
 			if (barrier.y + barrier.positionYOffset == game.input.activePointer.y ){
+				// stop the barriers from moving
 				barrier.body.velocity.y = 0;
 			}
 		}
 		var ballsInWrongPlace = 0;
+		// itterate through all the balls
 		for (var i = 0; i < balls.children.length; i++){
 			var ball = balls.children[i];
 			if (Math.abs(ball.body.velocity.x) < ball.speed * 0.25){
-				//if a ball is not traveling at least 45 degrees in the x direction
+				// force a ball to have atleast 25% of it's velocity in the x direction
 				ball.body.velocity.x = ball.speed * 0.25;
 			}
 			if (Math.abs(ball.body.velocity.x) + Math.abs(ball.body.velocity.y) != ball.speed) {
@@ -206,8 +234,8 @@ function createBall(radius, colour, group){
 	ball.ctx.fill();
 	/*
 	ball.ctx.lineWidth = radius * 0.05;
-  ball.ctx.strokeStyle = colour['ballStroke'];
-  ball.ctx.stroke();
+	ball.ctx.strokeStyle = colour['ballStroke'];
+	ball.ctx.stroke();
 	*/
 	// use the bitmap data as the texture for the sprite
 	var sprite = game.add.sprite(randInt(0,game.world.width - 20), randInt(0,game.world.height - 20), ball);
@@ -241,7 +269,7 @@ function makeBalls(amount, colour, group){
 	}
 }
 function randInt(min,max){
-    return Math.floor(Math.random()*(max-min+1)+min);
+	return Math.floor(Math.random()*(max-min+1)+min);
 }
 function youWin(){
 	balls.removeAll();
@@ -254,7 +282,7 @@ function youWin(){
 		fill: "#fff",
 		align: "center"
 	};
-  startButton = game.add.text(0, 0, "Click to Level Up!", style);
+	startButton = game.add.text(0, 0, "Click to Level Up!", style);
 	startButton.x = game.world.centerX - startButton.width / 2;
 	startButton.y = game.world.height - 10 - startButton.height;
 	youWinSprite.bringToTop();
