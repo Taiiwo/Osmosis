@@ -22,6 +22,7 @@ function preload() {
 	for (var i = 0; i < numImages; i++){
 		game.load.image('youWin'+ i.toString(), 'assets/youWin'+ i.toString() +'.png');
 	}
+	game.load.image('help', 'assets/popup.png');
 }
 var balls;
 var barriers;
@@ -112,7 +113,7 @@ function create() {
 		align: "center"
 	};
 	// make a text sprite
-	startButton = game.add.text(0, 0, "Click to Start", style);
+	startButton = game.add.text(0, 0, "Click to Start, 'h' for help", style);
 	// edit the location of the sprite (Put it in the center of the page)
 	startButton.x = game.world.centerX - startButton.width / 2;
 	startButton.y = game.world.centerY - startButton.height / 2;
@@ -130,6 +131,44 @@ function create() {
 			makeBalls(numberOfBalls / 2, worldColours[1], balls);
 		}
 	}, this);
+	var tween = null;
+	var open = false;
+	// event hander for 'h' key
+	var helpKey = game.input.keyboard.addKey(Phaser.Keyboard.H);
+	// add popup to screen
+	popup = game.add.sprite(game.world.centerX, game.world.centerY, 'help');
+	popup.anchor.set(0.5);
+	popup.inputEnabled = true;
+	popup.input.enableDrag();
+	popup.scale.set(0);
+	helpKey.onDown.add(function(){
+		togglePopup(popup);
+	}, this);
+	function togglePopup(popup){
+		if (open) {
+			closePopup(popup);
+		}
+		else {
+			openPopup(popup);
+		}
+	}
+	function openPopup(popup) {
+		if ((tween !== null && tween.isRunning) || popup.scale.x === 1){
+			return;
+		}
+		//  Create a tween that will pop-open the window, but only if it's not already tweening or open
+		tween = game.add.tween(popup.scale).to( { x: 1, y: 1 }, 1000, Phaser.Easing.Elastic.Out, true);
+		open = true;
+	}
+	function closePopup(popup) {
+		if (tween && tween.isRunning || popup.scale.x === 0){
+			return;
+		}
+		//  Create a tween that will close the window, but only if it's not already tweening or closed
+		tween = game.add.tween(popup.scale).to( { x: 0.1, y: 0 }, 500, Phaser.Easing.Elastic.In, true);
+		open = false;
+	}
+
 	scores = game.add.group();
 	// load the scores to the page
 	makeScores();
